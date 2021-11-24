@@ -43,6 +43,7 @@ namespace PlatformBenchmarks
         {
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.postgresql.json")
                 .AddEnvironmentVariables()
                 .AddEnvironmentVariables(prefix: "ASPNETCORE_")
                 .AddCommandLine(args)
@@ -76,17 +77,6 @@ namespace PlatformBenchmarks
                     });
                 })
                 .UseStartup<Startup>();
-
-            hostBuilder.UseSockets(options =>
-            {
-                options.WaitForDataBeforeAllocatingBuffer = false;
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    options.UnsafePreferInlineScheduling = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
-                }
-            });
-
 
             var host = hostBuilder.Build();
 
