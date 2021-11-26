@@ -52,7 +52,9 @@ namespace PlatformBenchmarks
 
             for (int i = 0; i < results.Length; i++)
             {
-                var db = new NpgsqlConnection(_connectionString);
+                var db = GetConnection();
+                // Console.WriteLine(new NpgsqlConnectionStringBuilder(db.ConnectionString).ApplicationName);
+
                 await db.OpenAsync();
                 var (cmd, _) = CreateReadCommand(db);
                 readers[i] = (cmd.ExecuteReaderAsync(System.Data.CommandBehavior.SingleRow), db);
@@ -160,16 +162,11 @@ namespace PlatformBenchmarks
             await db.OpenAsync();
             using var updateCmd = new NpgsqlCommand(BatchUpdateString.Query(count), db);
             
-            var ids = BatchUpdateString.Ids;
-            var randoms = BatchUpdateString.Randoms;
-
             for (int i = 0; i < results.Length; i++)
             {
+                updateCmd.Parameters.Add(new NpgsqlParameter<int> { TypedValue = results[i].Id });
                 var randomNumber = _random.Next(1, 10001);
-
-                updateCmd.Parameters.Add(new NpgsqlParameter<int>(parameterName: ids[i], value: results[i].Id));
-                updateCmd.Parameters.Add(new NpgsqlParameter<int>(parameterName: randoms[i], value: randomNumber));
-
+                updateCmd.Parameters.Add(new NpgsqlParameter<int> { TypedValue = randomNumber });
                 results[i].RandomNumber = randomNumber;
             }
 

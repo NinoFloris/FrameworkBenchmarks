@@ -14,7 +14,7 @@ namespace PlatformBenchmarks
         internal static readonly string[] Ids = Enumerable.Range(0, MaxBatch).Select(i => $"@Id_{i}").ToArray();
         internal static readonly string[] Randoms = Enumerable.Range(0, MaxBatch).Select(i => $"@Random_{i}").ToArray();
 
-        private static string[] _queries = new string[MaxBatch + 1];
+        private static readonly string[] _queries = new string[MaxBatch];
 
         public static string Query(int batchSize)
         {
@@ -23,15 +23,18 @@ namespace PlatformBenchmarks
                 return _queries[batchSize];
             }
 
-            var lastIndex = batchSize - 1;
+            var lastParam = batchSize * 2;
 
             var sb = StringBuilderCache.Acquire();
 
             if (DatabaseServer == DatabaseServer.PostgreSql)
             {
-                sb.Append("UPDATE world SET randomNumber = temp.randomNumber FROM (VALUES ");
-                Enumerable.Range(0, lastIndex).ToList().ForEach(i => sb.Append($"(@Id_{i}, @Random_{i}), "));
-                sb.Append($"(@Id_{lastIndex}, @Random_{lastIndex}) ORDER BY 1) AS temp(id, randomNumber) WHERE temp.id = world.id");
+                sb.Append("UPDATE world SET randomNumber = CASE id ");
+                Enumerable.Range(1, batchSize * 2).Where(x => x % 2 == 1).ToList().ForEach(i => sb.Append($"when ${i.ToString()} then ${(i + 1).ToString()} "));
+                sb.AppendLine("else randomnumber end");
+                sb.Append("where id in (");
+                Enumerable.Range(1, batchSize * 2).Where(x => x % 2 == 1).ToList().ForEach(i => sb.Append($"${i.ToString()}{(lastParam == i + 1 ? "" : ", ")}"));
+                sb.Append(")");
             }
             else
             {
